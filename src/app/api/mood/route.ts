@@ -4,6 +4,9 @@ import { prisma } from '@/lib/db'
 // GET - Retrieve all mood entries
 export async function GET() {
   try {
+    // Ensure database is connected
+    await prisma.$connect()
+
     const moodEntries = await prisma.moodEntry.findMany({
       orderBy: {
         createdAt: 'desc'
@@ -13,10 +16,16 @@ export async function GET() {
     return NextResponse.json(moodEntries)
   } catch (error) {
     console.error('Error fetching mood entries:', error)
+    // Return empty array if database is not ready
+    if (error instanceof Error && error.message.includes('database')) {
+      return NextResponse.json([])
+    }
     return NextResponse.json(
       { error: 'Failed to fetch mood entries' },
       { status: 500 }
     )
+  } finally {
+    await prisma.$disconnect()
   }
 }
 
@@ -41,6 +50,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Ensure database is connected
+    await prisma.$connect()
+
     const moodEntry = await prisma.moodEntry.create({
       data: {
         mood,
@@ -55,5 +67,7 @@ export async function POST(request: NextRequest) {
       { error: 'Failed to create mood entry' },
       { status: 500 }
     )
+  } finally {
+    await prisma.$disconnect()
   }
 }
