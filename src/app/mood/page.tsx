@@ -38,10 +38,14 @@ export default function MoodPage() {
       const response = await fetch('/api/mood')
       if (response.ok) {
         const entries = await response.json()
-        setMoodEntries(entries)
+        setMoodEntries(Array.isArray(entries) ? entries : [])
+      } else {
+        console.warn('Failed to fetch mood entries, using empty array')
+        setMoodEntries([])
       }
     } catch (error) {
       console.error('Error fetching mood entries:', error)
+      setMoodEntries([])
     }
   }
 
