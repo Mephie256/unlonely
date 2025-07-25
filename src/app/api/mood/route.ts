@@ -4,8 +4,11 @@ import { prisma } from '@/lib/db'
 // GET - Retrieve all mood entries
 export async function GET() {
   try {
-    // Ensure database is connected
-    await prisma.$connect()
+    // Check if we're in a serverless environment without persistent storage
+    if (process.env.NODE_ENV === 'production' && !process.env.DATABASE_URL?.startsWith('http')) {
+      console.warn('Database not configured for production, returning empty array')
+      return NextResponse.json([])
+    }
 
     const moodEntries = await prisma.moodEntry.findMany({
       orderBy: {
@@ -16,16 +19,8 @@ export async function GET() {
     return NextResponse.json(moodEntries)
   } catch (error) {
     console.error('Error fetching mood entries:', error)
-    // Return empty array if database is not ready
-    if (error instanceof Error && error.message.includes('database')) {
-      return NextResponse.json([])
-    }
-    return NextResponse.json(
-      { error: 'Failed to fetch mood entries' },
-      { status: 500 }
-    )
-  } finally {
-    await prisma.$disconnect()
+    // Return empty array if database is not accessible
+    return NextResponse.json([])
   }
 }
 
@@ -50,8 +45,14 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Ensure database is connected
-    await prisma.$connect()
+    // Check if we're in a serverless environment without persistent storage
+    if (process.env.NODE_ENV === 'production' && !process.env.DATABASE_URL?.startsWith('http')) {
+      console.warn('Database not configured for production')
+      return NextResponse.json(
+        { error: 'Mood tracking is not available in this deployment. Please configure a cloud database.' },
+        { status: 503 }
+      )
+    }
 
     const moodEntry = await prisma.moodEntry.create({
       data: {
@@ -64,10 +65,8 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Error creating mood entry:', error)
     return NextResponse.json(
-      { error: 'Failed to create mood entry' },
-      { status: 500 }
+      { error: 'Database not available. Please configure a cloud database for mood tracking.' },
+      { status: 503 }
     )
-  } finally {
-    await prisma.$disconnect()
   }
 }
