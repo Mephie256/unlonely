@@ -7,14 +7,8 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
 import { getMoodEmoji, formatDate } from "@/lib/utils"
+import { moodStorage, type MoodEntry } from "@/lib/mood-storage"
 import toast from "react-hot-toast"
-
-interface MoodEntry {
-  id: string
-  mood: string
-  note?: string
-  createdAt: string
-}
 
 const moods = [
   { value: 'Happy', label: 'Happy', emoji: '😊', color: 'bg-green-100 hover:bg-green-200 border-green-300' },
@@ -28,6 +22,7 @@ export default function MoodPage() {
   const [note, setNote] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [showForm, setShowForm] = useState(false)
+  const [useClientStorage, setUseClientStorage] = useState(false)
 
   useEffect(() => {
     fetchMoodEntries()
@@ -37,15 +32,29 @@ export default function MoodPage() {
     try {
       const response = await fetch('/api/mood')
       if (response.ok) {
-        const entries = await response.json()
-        setMoodEntries(Array.isArray(entries) ? entries : [])
+        const data = await response.json()
+
+        if (data.useClientStorage) {
+          // Use client-side storage
+          setUseClientStorage(true)
+          const clientEntries = moodStorage.getEntries()
+          setMoodEntries(clientEntries)
+        } else {
+          // Use server-side database
+          setUseClientStorage(false)
+          setMoodEntries(Array.isArray(data.entries) ? data.entries : [])
+        }
       } else {
-        console.warn('Failed to fetch mood entries, using empty array')
-        setMoodEntries([])
+        console.warn('Failed to fetch mood entries, falling back to client storage')
+        setUseClientStorage(true)
+        const clientEntries = moodStorage.getEntries()
+        setMoodEntries(clientEntries)
       }
     } catch (error) {
-      console.error('Error fetching mood entries:', error)
-      setMoodEntries([])
+      console.error('Error fetching mood entries, falling back to client storage:', error)
+      setUseClientStorage(true)
+      const clientEntries = moodStorage.getEntries()
+      setMoodEntries(clientEntries)
     }
   }
 
@@ -54,30 +63,66 @@ export default function MoodPage() {
 
     setIsLoading(true)
     try {
-      const response = await fetch('/api/mood', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          mood: selectedMood,
-          note: note.trim() || null,
-        }),
-      })
-
-      if (response.ok) {
-        const newEntry = await response.json()
+      if (useClientStorage) {
+        // Save directly to client storage
+        const newEntry = moodStorage.saveEntry(selectedMood, note.trim() || null)
         setMoodEntries(prev => [newEntry, ...prev])
         setSelectedMood('')
         setNote('')
         setShowForm(false)
         toast.success('Mood saved! 💙')
       } else {
-        throw new Error('Failed to save mood')
+        // Try to save to server first
+        const response = await fetch('/api/mood', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            mood: selectedMood,
+            note: note.trim() || null,
+          }),
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+
+          if (data.useClientStorage) {
+            // Server indicated we should use client storage
+            setUseClientStorage(true)
+            const newEntry = moodStorage.saveEntry(selectedMood, note.trim() || null)
+            setMoodEntries(prev => [newEntry, ...prev])
+          } else {
+            // Server saved successfully
+            setMoodEntries(prev => [data.entry, ...prev])
+          }
+
+          setSelectedMood('')
+          setNote('')
+          setShowForm(false)
+          toast.success('Mood saved! 💙')
+        } else {
+          throw new Error('Failed to save mood')
+        }
       }
     } catch (error) {
       console.error('Error saving mood:', error)
-      toast.error('Failed to save mood. Please try again.')
+      // Fallback to client storage if server fails
+      if (!useClientStorage) {
+        try {
+          setUseClientStorage(true)
+          const newEntry = moodStorage.saveEntry(selectedMood, note.trim() || null)
+          setMoodEntries(prev => [newEntry, ...prev])
+          setSelectedMood('')
+          setNote('')
+          setShowForm(false)
+          toast.success('Mood saved locally! 💙')
+        } catch (clientError) {
+          toast.error('Failed to save mood. Please try again.')
+        }
+      } else {
+        toast.error('Failed to save mood. Please try again.')
+      }
     } finally {
       setIsLoading(false)
     }
@@ -90,6 +135,12 @@ export default function MoodPage() {
         <p className="text-muted-foreground mt-2 text-sm sm:text-base">
           Track your emotions and reflect on your journey
         </p>
+        {useClientStorage && (
+          <div className="mt-3 inline-flex items-center gap-2 px-3 py-1 bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 rounded-full text-xs">
+            <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+            Stored locally in your browser
+          </div>
+        )}
       </div>
 
       {/* Add Mood Button */}

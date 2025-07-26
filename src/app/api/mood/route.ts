@@ -1,13 +1,42 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/db'
+
+// Mock prisma for when it's not available
+let prisma: any;
+try {
+  prisma = require('@/lib/db').prisma;
+} catch (error) {
+  console.warn('Prisma not available, using client-side storage fallback');
+  prisma = null;
+}
+
+// Helper function to check if database is available
+const isDatabaseAvailable = async () => {
+  try {
+    // If prisma is not available, return false
+    if (!prisma) return false;
+
+    // Check if we have a proper database URL for production
+    if (process.env.NODE_ENV === 'production' && !process.env.DATABASE_URL?.startsWith('http')) {
+      return false
+    }
+
+    // Try a simple database operation
+    await prisma.$queryRaw`SELECT 1`
+    return true
+  } catch (error) {
+    console.warn('Database not available:', error)
+    return false
+  }
+}
 
 // GET - Retrieve all mood entries
 export async function GET() {
   try {
-    // Check if we're in a serverless environment without persistent storage
-    if (process.env.NODE_ENV === 'production' && !process.env.DATABASE_URL?.startsWith('http')) {
-      console.warn('Database not configured for production, returning empty array')
-      return NextResponse.json([])
+    const dbAvailable = await isDatabaseAvailable()
+
+    if (!dbAvailable) {
+      // Return a special response indicating client-side storage should be used
+      return NextResponse.json({ useClientStorage: true, entries: [] })
     }
 
     const moodEntries = await prisma.moodEntry.findMany({
@@ -16,11 +45,11 @@ export async function GET() {
       }
     })
 
-    return NextResponse.json(moodEntries)
+    return NextResponse.json({ useClientStorage: false, entries: moodEntries })
   } catch (error) {
     console.error('Error fetching mood entries:', error)
-    // Return empty array if database is not accessible
-    return NextResponse.json([])
+    // Fallback to client-side storage
+    return NextResponse.json({ useClientStorage: true, entries: [] })
   }
 }
 
@@ -45,13 +74,20 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Check if we're in a serverless environment without persistent storage
-    if (process.env.NODE_ENV === 'production' && !process.env.DATABASE_URL?.startsWith('http')) {
-      console.warn('Database not configured for production')
-      return NextResponse.json(
-        { error: 'Mood tracking is not available in this deployment. Please configure a cloud database.' },
-        { status: 503 }
-      )
+    const dbAvailable = await isDatabaseAvailable()
+
+    if (!dbAvailable) {
+      // Return a success response but indicate client should handle storage
+      const mockEntry = {
+        id: `client_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        mood,
+        note: note || null,
+        createdAt: new Date().toISOString()
+      }
+      return NextResponse.json({
+        useClientStorage: true,
+        entry: mockEntry
+      }, { status: 201 })
     }
 
     const moodEntry = await prisma.moodEntry.create({
@@ -61,12 +97,16 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    return NextResponse.json(moodEntry, { status: 201 })
+    return NextResponse.json({
+      useClientStorage: false,
+      entry: moodEntry
+    }, { status: 201 })
   } catch (error) {
     console.error('Error creating mood entry:', error)
-    return NextResponse.json(
-      { error: 'Database not available. Please configure a cloud database for mood tracking.' },
-      { status: 503 }
-    )
+    // Fallback to client-side storage - let client handle the entry creation
+    return NextResponse.json({
+      useClientStorage: true,
+      entry: null
+    }, { status: 201 })
   }
 }

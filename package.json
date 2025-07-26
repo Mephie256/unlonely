@@ -9,7 +9,7 @@
     "lint": "next lint",
     "db:push": "prisma db push",
     "db:generate": "prisma generate",
-    "postinstall": "prisma generate"
+    "postinstall": "node -e \"console.log('Skipping postinstall database setup')\""
   },
   "dependencies": {
     "@prisma/client": "^5.15.0",
