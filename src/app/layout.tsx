@@ -11,9 +11,9 @@ export const metadata: Metadata = {
   title: "UnLonely - Your AI Companion",
   description: "A kind, minimal AI companion app to help lonely teenagers and students. Chat with a friendly AI bot, track your mood, and view your emotional history.",
   icons: {
-    icon: '/colly.png',
-    shortcut: '/colly.png',
-    apple: '/colly.png',
+    icon: '/colly.svg',
+    shortcut: '/colly.svg',
+    apple: '/colly.svg',
   },
 }
 
@@ -26,7 +26,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <link rel="icon" href="/colly.png" type="image/png" />
+        <link rel="icon" href="/colly.svg" type="image/svg+xml" />
         <link rel="icon" href="/favicon.ico" type="image/x-icon" />
       </head>
       <body className={inter.className}>

@@ -24,7 +24,7 @@ export function Navbar() {
           <div className="flex items-center justify-center flex-1 sm:flex-none sm:justify-start">
             <Link href="/" className="flex items-center space-x-2 p-2">
               <Image
-                src="/colly.png"
+                src="/colly.svg"
                 alt="UnLonely Logo"
                 width={32}
                 height={32}

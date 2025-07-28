@@ -43,7 +43,7 @@ export default function HomePage() {
         >
           <div className="relative">
             <Image
-              src="/colly.png"
+              src="/colly.svg"
               alt="UnLonely Logo"
               width={80}
               height={80}
