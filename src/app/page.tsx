@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { motion } from "framer-motion"
-import { Heart, MessageCircle, BarChart3, Sparkles } from "lucide-react"
+import { Heart, MessageCircle, BarChart3 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import Image from "next/image"
@@ -49,13 +49,6 @@ export default function HomePage() {
               height={80}
               className="h-16 w-16 sm:h-20 sm:w-20 object-contain"
             />
-            <motion.div
-              animate={{ rotate: 360 }}
-              transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-              className="absolute -top-1 -right-1 sm:-top-2 sm:-right-2"
-            >
-              <Sparkles className="h-6 w-6 sm:h-8 sm:w-8 text-yellow-500" />
-            </motion.div>
           </div>
         </motion.div>
 
