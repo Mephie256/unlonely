@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation"
 import { Heart, MessageCircle, BarChart3 } from "lucide-react"
 import { ThemeToggle } from "./theme-toggle"
 import { cn } from "@/lib/utils"
+import Image from "next/image"
 
 const navigation = [
   { name: "Home", href: "/", icon: Heart },
@@ -22,7 +23,13 @@ export function Navbar() {
           {/* Logo - Centered on mobile */}
           <div className="flex items-center justify-center flex-1 sm:flex-none sm:justify-start">
             <Link href="/" className="flex items-center space-x-2 p-2">
-              <Heart className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
+              <Image
+                src="/colly.png"
+                alt="UnLonely Logo"
+                width={32}
+                height={32}
+                className="h-6 w-6 sm:h-8 sm:w-8 object-contain"
+              />
               <span className="text-lg sm:text-xl font-bold">UnLonely</span>
             </Link>
           </div>

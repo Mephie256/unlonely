@@ -5,6 +5,7 @@ import { motion } from "framer-motion"
 import { Heart, MessageCircle, BarChart3, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import Image from "next/image"
 
 const features = [
   {
@@ -41,7 +42,13 @@ export default function HomePage() {
           className="flex justify-center"
         >
           <div className="relative">
-            <Heart className="h-16 w-16 sm:h-20 sm:w-20 text-primary" />
+            <Image
+              src="/colly.png"
+              alt="UnLonely Logo"
+              width={80}
+              height={80}
+              className="h-16 w-16 sm:h-20 sm:w-20 object-contain"
+            />
             <motion.div
               animate={{ rotate: 360 }}
               transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
